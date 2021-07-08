@@ -1,0 +1,304 @@
+{% extends "layout.html" %}
+{% block content %}
+<nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+    <a class="navbar-brand" href="/">Feedback Visualizer</a>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a style="align-items: flex-start;" class="nav-link" href="/toRegister">Upload</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/individualReport">Individual</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+<div id="layoutSidenav">
+    <div id="layoutSidenav_content">
+        <main>
+            <div class="container-fluid">
+                <center>
+                    <h1 class="mt-4">Dashboard</h1>
+                </center>
+                <!-- Example single danger button -->
+                <div class="form-row">
+                    <div class="form-group col-md-2">
+                        <select class="form-control" name="inputSemester" id="inputSemester" value="Semester">
+                            <option value="0">Semester</option>
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                            <option>6</option>
+                            <option>7</option>
+                            <option>8</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <select class="form-control" name="inputDepartment" id="inputDepartment">
+                            <option>Department</option>
+                            <option>CE</option>
+                            <option>IT</option>
+                            <option>CSE</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <select class="form-control" name="inputSubject" id="inputSubject">
+                            <option>Subject</option>
+                        </select>
+                    </div>
+                    <!--div class="form-group col-md-2">
+                        <select class="form-control" name="inputFacultyName" id="inputFacultyName">
+                            <option>FacultyName</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <select class="form-control" name="inputProgram">
+                            <option>Year</option>
+                            <option>2017</option>
+                            <option>2018</option>
+                            <option>2019</option>
+                            <option>2020</option>
+                        </select>
+                    </div-->
+                </div>
+                <button class="btn btn-primary" style="float: right;" id="Select">Select</button>
+                <br>
+                <br>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <i class="fas fa-chart-bar mr-1"></i>
+                                Feedback Based On Criteria
+                            </div>
+                            <div class="card-body"><canvas id="myBarChart" width="100%" height="50"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <i class="fas fa-chart-pie mr-1"></i>
+                                Overall Feedback (%)
+                            </div>
+                            <div class="card-body"><canvas id="myPieChart" width="100%" height="50"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <footer class="py-4 bg-light mt-auto">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center justify-content-between small">
+                    <!--div class="text-muted">Copyright &copy; Feeback Visualizer </div-->
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        $('#inputDepartment').change(function () {
+
+            var department = $('#inputDepartment').val();
+            var sem = $('#inputSemester').val();
+            var data = [sem, department];
+            // Make Ajax Request and expect JSON-encoded data
+            $.getJSON(
+                '/get_subject' + '/' + data,
+                function (data) {
+
+                    // Remove old options
+                    $('#inputSubject').find('option').remove();
+                    var option_item = '<option value="Subject">Subject</option>'
+                    $('#inputSubject').append(option_item);
+                    // Add new items
+                    $.each(data, function (key, val) {
+                        var option_item = '<option value="' + val + '">' + val + '</option>'
+                        $('#inputSubject').append(option_item);
+                    });
+                }
+            );
+        });
+
+        $('#inputSubject').change(function () {
+
+            var department = $('#inputDepartment').val();
+            var sem = $('#inputSemester').val();
+            var sub = $('#inputSubject').val();
+            var data = [sem, department, sub];
+            data = JSON.stringify(data);
+            // Make Ajax Request and expect JSON-encoded data
+            $.getJSON(
+                '/get_faculty' + '/' + data,
+                function (data) {
+
+                    // Remove old options
+                    $('#inputFacultyName').find('option').remove();
+                    var option_item = '<option value="FacultyName">FacultyName</option>'
+                    $('#inputFacultyName').append(option_item);
+                    // Add new items
+                    $.each(data, function (key, val) {
+                        var option_item = '<option value="' + val + '">' + val + '</option>'
+                        $('#inputFacultyName').append(option_item);
+                    });
+                }
+            );
+        });
+
+        $('#Select').click(function () {
+            var department = $('#inputDepartment').val();
+            var sem = $('#inputSemester').val();
+            var sub = $('#inputSubject').val();
+            var data = [sem, department, sub];
+            data = JSON.stringify(data);
+
+            $.getJSON(
+                '/getBarChart' + '/' + data,
+                function (data) {
+                    //console.log(data);                    
+                    var ctx = document.getElementById("myBarChart");
+                    if (window.myLineChart != undefined)
+                        window.myLineChart.destroy();
+                    window.myLineChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.FacultyName,
+                            datasets: [
+                                {
+                                    label: "Excellent",
+                                    backgroundColor: "green",
+                                    borderColor: "black",
+                                    borderWidth: 1,
+                                    data: data.Excellent
+                                },
+                                {
+                                    label: "Good",
+                                    backgroundColor: "blue",
+                                    borderColor: "black",
+                                    borderWidth: 1,
+                                    data: data.Good
+                                },
+                                {
+                                    label: "Average",
+                                    backgroundColor: "purple",
+                                    borderColor: "black",
+                                    borderWidth: 1,
+                                    data: data.Average
+                                },
+                                {
+                                    label: "Bad",
+                                    backgroundColor: "yellow",
+                                    borderColor: "black",
+                                    borderWidth: 1,
+                                    data: data.Bad
+                                },
+                                {
+                                    label: "VeryBad",
+                                    backgroundColor: "red",
+                                    borderColor: "black",
+                                    borderWidth: 1,
+                                    data: data.VeryBad
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                xAxes: [{
+                                    time: {
+                                        unit: 'month'
+                                    },
+                                    gridLines: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 6
+                                    }
+                                }],
+                                yAxes: [{
+                                    ticks: {
+                                        min: 0,
+                                        max: 200,
+                                        maxTicksLimit: 5
+                                    },
+                                    gridLines: {
+                                        display: true
+                                    }
+                                }],
+                            },
+                            legend: {
+                                display: false
+                            }
+                        }
+                    });
+                }
+            );
+
+        });
+
+        $('#Select').click(function () {
+            var department = $('#inputDepartment').val();
+            var sem = $('#inputSemester').val();
+            var sub = $('#inputSubject').val();
+            var data = [sem, department, sub];
+            data = JSON.stringify(data);
+            //console.log("selected");
+            $.getJSON(
+                '/getPieChart' + '/' + data,
+                function (data) {
+                    var ctx = document.getElementById("myPieChart");
+                    if (ctx) {
+                        // console.log("in Pie");
+                        // console.log(data);
+                        // console.log(this.chart);
+                        if (window.myPieCharts != undefined)
+                            window.myPieCharts.destroy();
+                        window.myPieCharts = new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: data.FacultyName,
+                                datasets: [{
+                                    data: data['Overall Feedback (%)'],
+                                    backgroundColor: ['#007bff', '#dc3545', '#ffc107', '#28a745'],
+                                }],
+                            },
+                        });
+                        // myPieChart.destroy();      
+                    }
+                    else {
+                        document.write("Element myPieChart not found!");
+                    }
+                }
+            );
+
+
+        });
+
+
+
+        /* var ct = $.get('/getReport');
+         ct.done(function (results) {
+         var ctx = document.getElementById("myPieChart");
+         if(ctx){
+             console.log("in Pie");
+             console.log(results)
+             var myPieChart = new Chart(ctx, {
+                 type: 'pie',
+                 data: {
+                     labels: results.FacultyName,
+                     datasets: [{
+                     data: results['Overall Feedback (%)'],
+                     backgroundColor: ['#007bff', '#dc3545', '#ffc107', '#28a745'],
+                     }],
+                 },
+                 });      
+         }
+         else{
+             document.write("Element myPieChart not found!");
+         }
+
+         });*/
+    }); 
+</script>
+{% endblock %}
